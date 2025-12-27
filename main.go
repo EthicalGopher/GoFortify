@@ -1,6 +1,6 @@
 package main
 
-import "sentinantal/server"
+import "github.com/EthicalGopher/SentinelShield/server"
 
 func main() {
 	server.Server()

@@ -1,4 +1,4 @@
-module sentinantal
+module github.com/EthicalGopher/SentinelShield
 
 go 1.25.5
 
