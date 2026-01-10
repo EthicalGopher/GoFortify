@@ -2,16 +2,28 @@ package server
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/EthicalGopher/SentinelShield/tui/shared"
 	"github.com/EthicalGopher/SentinelShield/vulnerabilities"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+)
+
+var (
+	logger = shared.NewLogger()
+)
+
+const (
+	reset  = "\033[0m"
+	gray   = "\033[90m"
+	cyan   = "\033[36m"
+	yellow = "\033[33m"
+	green  = "\033[32m"
+	red    = "\033[31m"
 )
 
 func ForwardToBackend(c *fiber.Ctx, backendBaseURL string) error {
@@ -53,7 +65,7 @@ func ForwardToBackend(c *fiber.Ctx, backendBaseURL string) error {
 
 	return c.Status(resp.StatusCode).Send(respBody)
 }
-func Server() {
+func Server() error {
 	app := fiber.New(fiber.Config{
 		DisableStartupMessage: true,
 	})
@@ -78,9 +90,13 @@ func Server() {
 		latency := time.Since(start)
 
 		// -------- Logging --------
-		log.Printf(
-			"[%s] %s | %s %s | Latency: %s",
-			time.Now().Format("2006/01/02 15:04:05"),
+		logger.Println(gray + "--------------------------------------------------" + reset)
+		logger.Printf(
+			cyan+"Time     :"+reset+" %s\n"+
+				cyan+"IP       :"+reset+" %s\n"+
+				cyan+"Request  :"+reset+" %s %s\n"+
+				yellow+"Latency  :"+reset+" %s\n",
+			time.Now().Format("2006-01-02 15:04:05"),
 			ip,
 			method,
 			path,
@@ -91,21 +107,21 @@ func Server() {
 		query := c.Queries()
 		if len(query) > 0 {
 			if vulnerabilities.SqlInjection(c, query) {
+				logger.Println(red + "Blocked by SentinelShield (SQL Injection)")
 				return c.Status(fiber.StatusForbidden).
 					SendString("Blocked by SentinelShield (SQL Injection)")
 			}
 			if vulnerabilities.XSSInjection(c, c.Queries()) {
-				return c.Status(fiber.StatusForbidden).SendString("Blocked due to XSS attempt")
+				logger.Println(red + "Blocked by SentinelShield (XSS attempt)")
+				return c.Status(fiber.StatusForbidden).SendString("Blocked by SentinelShield due to XSS attempt")
 			}
-
 		}
 
 		if len(query) > 0 {
-			fmt.Print("\tQueries:")
+			logger.Println(green + "Query Parameters:" + reset)
 			for k, v := range query {
-				fmt.Printf(" %s=%s", k, v)
+				logger.Printf("  %s- %s = %s%s\n", green, k, v, reset)
 			}
-			fmt.Println()
 		}
 
 		// -------- Body (multipart only) --------
@@ -114,21 +130,22 @@ func Server() {
 			form, err := c.MultipartForm()
 			if err == nil && form != nil && len(form.Value) > 0 {
 				if vulnerabilities.SqlInjectionBody(c, form.Value) {
+					logger.Println(red + "Blocked by SentinelShield (SQL Injection)")
 					return c.Status(fiber.StatusForbidden).
 						SendString("Blocked by SentinelShield (SQL Injection)")
 				}
 				if vulnerabilities.XSSInjectionBody(c, form.Value) {
-					return c.Status(fiber.StatusForbidden).SendString("Blocked due to XSS attempt")
+					logger.Println(red + "Blocked by SentinelShield (XSS attempt)")
+					return c.Status(fiber.StatusForbidden).SendString("Blocked by SentinelShield due to XSS attempt")
 				}
 			}
 			if form.Value != nil {
-				fmt.Print("\t\tBody : ")
+				logger.Println(yellow + "Multipart Body:" + reset)
 				for key, values := range form.Value {
 					for _, v := range values {
-						fmt.Print("\t"+key, "->", v)
+						logger.Printf("  %s- %s -> %s%s\n", green, key, v, reset)
 					}
 				}
-				fmt.Println()
 			}
 
 		}
@@ -136,6 +153,6 @@ func Server() {
 		return ForwardToBackend(c, "http://localhost:8080")
 	})
 
-	log.Println("🛡 SentinelShield (Fiber) Proxy STARTED on :5174")
-	log.Fatal(app.Listen(":5174"))
+	logger.Println("SentinelShield Proxy STARTED on :5174")
+	return app.Listen(":5174")
 }

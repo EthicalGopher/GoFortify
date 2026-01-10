@@ -59,6 +59,8 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.menu.StartLogs {
 				m.menu.StartLogs = false
 				m.view = Logs
+				// Explicitly initialize the logs model when switching to its view.
+				return m, m.logs.Init()
 			}
 			return m, cmd
 		}
@@ -81,7 +83,9 @@ func (m RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case Logs:
 		{
 			var cmd tea.Cmd
-			m.logs, cmd = m.logs.Update(msg)
+			var updatedModel tea.Model
+			updatedModel, cmd = m.logs.Update(msg)
+			m.logs = updatedModel.(all_logs.Model)
 			if m.logs.Done {
 				m.logs.Done = false
 				m.view = Menu
