@@ -59,7 +59,7 @@ To see how to cite GoFortify in your research or project:
 | `--ratelimit` | `-r` | `100` | Max requests allowed per minute per IP |
 | `--sql` | `-s` | `vulnerabilities/sqlInjection.json` | Path to SQL injection logs |
 | `--xss` | `-x` | `vulnerabilities/xss.json` | Path to XSS logs |
-| `--ratelimit-file`| `-rf` | `vulnerabilities/rate_limit.json` | Path to rate limit logs |
+| `--ratelimit-file`| `-f` | `vulnerabilities/rate_limit.json` | Path to rate limit logs |
 
 ---
 
