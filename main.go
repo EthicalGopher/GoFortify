@@ -1,26 +1,12 @@
+// Package main is the entry point for the GoFortify application.
+// It initializes and executes the root command for the CLI.
 package main
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/EthicalGopher/SentinelShield/server"
-	"github.com/EthicalGopher/SentinelShield/tui"
-	"github.com/EthicalGopher/SentinelShield/tui/shared"
-	tea "github.com/charmbracelet/bubbletea"
+	"github.com/EthicalGopher/GoFortify/cmd"
 )
 
+// main is the primary entry point which delegates execution to the cmd package.
 func main() {
-	go func() {
-		if err := server.Server(); err != nil {
-			// Send the error to the log channel. The TUI will pick it up when it's ready.
-			shared.LogChan <- fmt.Sprintf("FATAL: Server exited with error: %v", err)
-		}
-	}()
-
-	p := tea.NewProgram(tui.NewRoot())
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("TUI crashed: %v\n", err)
-		os.Exit(1)
-	}
+	cmd.Execute()
 }

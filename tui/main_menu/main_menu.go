@@ -19,24 +19,22 @@ func (i Item) FilterValue() string { return i.title }
 type Model struct {
 	List      list.Model
 	StartLogs bool
+	StartCite bool
 	StartInit bool
 	Quit      bool
 }
 
 func New() Model {
 	items := []list.Item{
-		Item{"Initialize SentinelShield", "Start WAF gateway and load configurations"},
-		Item{"Reset Logs", "Remove previous vulnerability and rate-limit logs"},
 		Item{"All Logs", "Views all the logs"},
+		Item{"Reset Logs", "Remove previous vulnerability and rate-limit logs"},
 		Item{"Configure Protected Paths", "Set sensitive or hidden application routes"},
-		Item{"SQL Injection Logs", "View detected SQL injection attempts"},
-		Item{"XSS Logs", "View detected cross-site scripting attempts"},
-		Item{"Rate Limiting Logs", "View blocked repeated requests by IP"},
-		Item{"Exit", "Quit SentinelShield"},
+		Item{"Cite GoFortify", "Display how to cite this project"},
+		Item{"Exit", "Quit GoFortify"},
 	}
 
 	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "SentinelShield"
+	l.Title = "GoFortify"
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.SetShowHelp(true)
@@ -54,11 +52,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 
 		case "enter":
 			selected := m.List.SelectedItem().(Item)
-			if selected.title == "Initialize SentinelShield" {
-				m.StartInit = true
-			}
 			if selected.title == "All Logs" {
 				m.StartLogs = true
+			}
+			if selected.title == "Cite GoFortify" {
+				m.StartCite = true
 			}
 			if selected.title == "Exit" {
 				return m, tea.Quit

@@ -1,77 +1,120 @@
 package all_logs
 
 import (
+	"fmt"
 	"strings"
 
-	"github.com/EthicalGopher/SentinelShield/tui/shared"
+	"github.com/EthicalGopher/GoFortify/shared"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render
+var (
+	titleStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Right = "├"
+		return lipgloss.NewStyle().BorderStyle(b).Padding(0, 1)
+	}()
+
+	infoStyle = func() lipgloss.Style {
+		b := lipgloss.RoundedBorder()
+		b.Left = "┤"
+		return titleStyle.BorderStyle(b)
+	}()
+
+	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+
+	headerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#7D56F4")).
+			Bold(true).
+			Padding(0, 1)
+
+	footerStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("241")).
+			Padding(0, 1)
+)
 
 type logMsg string
 
 func waitForLog() tea.Cmd {
 	return func() tea.Msg {
-		return logMsg(<-shared.LogChan)
+		msg := <-shared.LogChan
+		return logMsg(msg)
 	}
 }
 
 type Model struct {
-	viewport viewport.Model
-	lines    []string
-	Done     bool
+	viewport      viewport.Model
+	lines         []string
+	Done          bool
+	ready         bool
+	width, height int
 }
 
 func New() Model {
-	vp := viewport.New(80, 20)
-	vp.Style = lipgloss.NewStyle().
-		BorderStyle(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62")).
-		PaddingRight(2)
-
 	return Model{
-		viewport: vp,
+		lines: []string{},
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	// This is called when the view becomes active.
 	return waitForLog()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-	var cmds []tea.Cmd
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
 
 	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.viewport.Width = msg.Width - 2
-		m.viewport.Height = msg.Height - 5
-		// Re-render content on resize
-		m.viewport.SetContent(strings.Join(m.lines, "\n"))
-
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
 			m.Done = true
 			return m, nil
 
-		case "q":
+		case "q", "ctrl+c":
 			return m, tea.Quit
+
+		case "c":
+			m.lines = []string{}
+			m.viewport.SetContent("")
+			return m, nil
 		}
 
+	case tea.WindowSizeMsg:
+		headerHeight := lipgloss.Height(m.headerView())
+		footerHeight := lipgloss.Height(m.footerView())
+		verticalMarginHeight := headerHeight + footerHeight
+
+		if !m.ready {
+			m.viewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			m.viewport.YPosition = headerHeight
+			m.viewport.HighPerformanceRendering = false
+			m.viewport.SetContent(strings.Join(m.lines, "\n"))
+			m.ready = true
+		} else {
+			m.viewport.Width = msg.Width
+			m.viewport.Height = msg.Height - verticalMarginHeight
+		}
+
+		m.width = msg.Width
+		m.height = msg.Height
+
 	case logMsg:
-		m.lines = append(m.lines, string(msg))
-		m.viewport.SetContent(strings.Join(m.lines, "\n"))
-		m.viewport.GotoBottom()
+		cleanMsg := strings.TrimSpace(string(msg))
+		if cleanMsg != "" {
+			m.lines = append(m.lines, cleanMsg)
+			if m.ready {
+				m.viewport.SetContent(strings.Join(m.lines, "\n"))
+				m.viewport.GotoBottom()
+			}
+		}
 		cmds = append(cmds, waitForLog())
 	}
 
-	// This will handle all messages we don't explicitly handle,
-	// including arrow keys, page up/down, etc. for scrolling.
 	m.viewport, cmd = m.viewport.Update(msg)
 	cmds = append(cmds, cmd)
 
@@ -79,9 +122,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	return m.viewport.View() + m.helpView()
+	if !m.ready {
+		return "\n  Initializing logs..."
+	}
+	return fmt.Sprintf("%s\n%s\n%s", m.headerView(), m.viewport.View(), m.footerView())
 }
 
-func (m Model) helpView() string {
-	return helpStyle("\n  ↑/↓: Navigate • esc: Back . q:quit\n")
+func (m Model) headerView() string {
+	title := headerStyle.Render("🛡️  GoFortify | Firewall Logs")
+	line := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240")).
+		Render(strings.Repeat("─", max(0, m.width-lipgloss.Width(title))))
+	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
+}
+
+func (m Model) footerView() string {
+	info := footerStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	help := helpStyle.Render(" ↑/↓: scroll • c: clear • esc: back • q: quit")
+	line := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240")).
+		Render(strings.Repeat("─", max(0, m.width-lipgloss.Width(info)-lipgloss.Width(help)-4)))
+	return lipgloss.JoinHorizontal(lipgloss.Center, " ", help, " ", line, " ", info)
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

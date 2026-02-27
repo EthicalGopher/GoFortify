@@ -2,23 +2,15 @@ package vulnerabilities
 
 import (
 	"encoding/json"
-	"github.com/gofiber/fiber/v2"
 	"os"
 	"time"
+
+	"github.com/EthicalGopher/GoFortify/shared"
+	"github.com/gofiber/fiber/v2"
 )
 
-var rateLimitFile = "vulnerabilities/rate_limit.json"
-
-type RateLimitLog struct {
-	Ip     string    `json:"ip"`
-	Path   string    `json:"path"`
-	Method string    `json:"method"`
-	Time   time.Time `json:"time"`
-	Reason string    `json:"reason"`
-}
-
-func LogRateLimit(c *fiber.Ctx) {
-	logEntry := RateLimitLog{
+func LogRateLimit(c *fiber.Ctx, rateLimitFile string) {
+	logEntry := shared.RateLimitLog{
 		Ip:     c.IP(),
 		Path:   c.Path(),
 		Method: c.Method(),
