@@ -28,7 +28,6 @@ func New() Model {
 	items := []list.Item{
 		Item{"All Logs", "Views all the logs"},
 		Item{"Reset Logs", "Remove previous vulnerability and rate-limit logs"},
-		Item{"Configure Protected Paths", "Set sensitive or hidden application routes"},
 		Item{"Cite GoFortify", "Display how to cite this project"},
 		Item{"Exit", "Quit GoFortify"},
 	}

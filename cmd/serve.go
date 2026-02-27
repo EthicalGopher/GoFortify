@@ -64,6 +64,6 @@ func init() {
 	initialiseCMD.Flags().StringVarP(&filename_rate, "ratelimit-file", "f", "vulnerabilities/rate_limit.json", "Filename for rate limit logs")
 	initialiseCMD.Flags().StringVarP(&filename_sql, "sql", "s", "vulnerabilities/sqlInjection.json", "Filename for SQL injection logs")
 	initialiseCMD.Flags().StringVarP(&filename_xss, "xss", "x", "vulnerabilities/xss.json", "Filename for XSS logs")
-	initialiseCMD.Flags().IntVarP(&ratelimit, "ratelimit", "r", 100, "Filename for XSS logs")
+	initialiseCMD.Flags().IntVarP(&ratelimit, "ratelimit", "r", 100, "To set the rate limit")
 
 }
