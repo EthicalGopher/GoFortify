@@ -15,6 +15,12 @@
 
 ---
 
+## 📹 Demo
+
+Check out the demo video in [`doc/demo.mp4`](doc/demo.mp4) to see GoFortify in action.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
