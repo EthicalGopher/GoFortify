@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoFortify Firewall Demo</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #eee;
+            padding: 2rem;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            color: #00d9ff;
+            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card h2 {
+            color: #00d9ff;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        .test-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-normal {
+            background: #10b981;
+            color: white;
+        }
+        .btn-normal:hover { background: #059669; }
+        .btn-sql {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-sql:hover { background: #dc2626; }
+        .btn-xss {
+            background: #f59e0b;
+            color: white;
+        }
+        .btn-xss:hover { background: #d97706; }
+        .btn-rate {
+            background: #8b5cf6;
+            color: white;
+        }
+        .btn-rate:hover { background: #7c3aed; }
+        .input-group {
+            margin: 1rem 0;
+        }
+        label { display: block; margin-bottom: 0.5rem; color: #aaa; }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #eee;
+            font-size: 1rem;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #00d9ff;
+        }
+        #response {
+            background: #0d1117;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+        }
+        .status-allowed { color: #10b981; }
+        .status-blocked { color: #ef4444; }
+        .status-rate-limited { color: #f59e0b; }
+        .status-pending { color: #888; }
+        .firewall-status {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        .status-item {
+            text-align: center;
+            padding: 1rem 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+        }
+        .status-item .label { color: #888; font-size: 0.9rem; }
+        .status-item .value { font-size: 1.5rem; font-weight: bold; }
+        .active { color: #10b981; }
+        .info {
+            background: rgba(0,217,255,0.1);
+            border-left: 4px solid #00d9ff;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ GoFortify Firewall Demo</h1>
+        <p class="subtitle">Test your firewall protection in real-time</p>
+        
+        <div class="firewall-status">
+            <div class="status-item">
+                <div class="label">SQL Injection</div>
+                <div class="value active">● Active</div>
+            </div>
+            <div class="status-item">
+                <div class="label">XSS Protection</div>
+                <div class="value active">● Active</div>
+            </div>
+            <div class="status-item">
+                <div class="label">Rate Limiting</div>
+                <div class="value active">● Active</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📝 Query Parameter Test</h2>
+            <div class="input-group">
+                <label>Enter a search query to test:</label>
+                <input type="text" id="searchInput" placeholder="Enter search term..." />
+            </div>
+            <div class="test-buttons">
+                <button class="btn-normal" onclick="testSearch('normal')">✅ Safe Search</button>
+                <button class="btn-sql" onclick="testSearch('sql')">💉 SQL Injection</button>
+                <button class="btn-xss" onclick="testSearch('xss')">⚠️ XSS Attack</button>
+            </div>
+            <div id="response"></div>
+        </div>
+
+        <div class="card">
+            <h2>📋 Form Test</h2>
+            <form id="testForm" onsubmit="submitForm(event)">
+                <div class="input-group">
+                    <label>Name:</label>
+                    <input type="text" name="name" id="formName" placeholder="Enter name..." />
+                </div>
+                <div class="input-group">
+                    <label>Password:</label>
+                    <input type="password" name="password" id="formPassword" placeholder="Enter password..." />
+                </div>
+                <button type="submit" class="btn-normal">Submit</button>
+            </form>
+            <div id="formResponse"></div>
+        </div>
+
+        <div class="card">
+            <h2>📖 GoFortify Documentation</h2>
+            
+            <div class="info">
+                <strong>GoFortify</strong> is a reverse proxy firewall that inspects incoming requests for malicious patterns and blocks them before they reach your backend server.
+            </div>
+
+            <h3 style="color:#00d9ff; margin-top:1.5rem;">Features</h3>
+            <ul style="margin-top:0.5rem; margin-left:1.5rem; color:#ccc; line-height:1.8;">
+                <li><strong>SQL Injection Protection:</strong> Detects and blocks SQL injection attacks by analyzing query parameters, form bodies, and JSON payloads for suspicious SQL patterns.</li>
+                <li><strong>XSS Protection:</strong> Blocks cross-site scripting (XSS) attempts by detecting malicious script tags and JavaScript event handlers.</li>
+                <li><strong>Rate Limiting:</strong> Limits requests per IP address to prevent denial-of-service (DoS) attacks and brute force attempts.</li>
+                <li><strong>CORS Support:</strong> Configurable cross-origin resource sharing headers.</li>
+            </ul>
+
+            <h3 style="color:#00d9ff; margin-top:1.5rem;">How It Works</h3>
+            <ol style="margin-top:0.5rem; margin-left:1.5rem; color:#ccc; line-height:1.8;">
+                <li>Client sends a request to GoFortify (this proxy)</li>
+                <li>GoFortify intercepts the request and inspects:
+                    <ul style="margin-left:1rem;">
+                        <li>Query string parameters (GET requests)</li>
+                        <li>Form data (application/x-www-form-urlencoded)</li>
+                        <li>Multipart form data</li>
+                        <li>JSON bodies (application/json)</li>
+                    </ul>
+                </li>
+                <li>If malicious patterns are detected, the request is blocked with a 403 Forbidden response</li>
+                <li>Valid requests are forwarded to your backend server</li>
+            </ol>
+
+            <h3 style="color:#00d9ff; margin-top:1.5rem;">Test Payloads</h3>
+            <div style="background:#0d1117; border-radius:8px; padding:1rem; margin-top:0.5rem; overflow-x:auto;">
+                <p style="color:#f59e0b; margin-bottom:0.5rem;">SQL Injection Examples:</p>
+                <code style="color:#10b981; display:block; white-space:pre-wrap;">' OR '1'='1
+admin' --
+admin' #
+' UNION SELECT NULL--</code>
+                <p style="color:#f59e0b; margin:1rem 0 0.5rem;">XSS Examples:</p>
+                <code style="color:#10b981; display:block; white-space:pre-wrap;"><s' + 'cript>alert(1)</s' + 'cript>
+<img src=x onerror=alert(1)>
+<svg onload=alert(1)>
+javascript:alert(1)</code>
+            </div>
+
+            <h3 style="color:#00d9ff; margin-top:1.5rem;">Architecture</h3>
+            <div style="background:#0d1117; border-radius:8px; padding:1rem; margin-top:0.5rem;">
+                <p style="color:#ccc; text-align:center; line-height:2;">
+                    <span style="color:#10b981;">Browser</span> 
+                    → 
+                    <span style="color:#f59e0b;">GoFortify (Port 5174)</span> 
+                    → 
+                    <span style="color:#00d9ff;">Backend (Port 3001)</span>
+                </p>
+                <p style="color:#888; font-size:0.9rem; margin-top:0.5rem; text-align:center;">
+                    GoFortify sits in front of your backend, filtering malicious requests before they reach your server.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firewall_url = "http://localhost:5174";
+
+        function testSearch(type) {
+            const input = document.getElementById('searchInput').value;
+            let payload = '';
+            
+            switch(type) {
+                case 'sql':
+                    payload = input ? input : "' OR '1'='1";
+                    break;
+                case 'xss':
+                    payload = input ? input : '<s' + 'cript>alert("XSS")</s' + 'cript>';
+                    break;
+                default:
+                    payload = input || 'hello world';
+            }
+
+            const responseEl = document.getElementById('response');
+            responseEl.innerHTML = '<span class="status-pending">Testing...</span>';
+
+            fetch(firewall_url + '/api/search?q=' + encodeURIComponent(payload), {
+                method: 'GET'
+            })
+            .then(r => r.text())
+            .then(text => {
+                const isBlocked = text.includes('Blocked');
+                responseEl.innerHTML = '<span class="' + (isBlocked ? 'status-blocked' : 'status-allowed') + '">' + text + '</span>';
+            })
+            .catch(err => {
+                responseEl.innerHTML = '<span class="status-blocked">Error: ' + err.message + '</span>';
+            });
+        }
+
+        function submitForm(e) {
+            e.preventDefault();
+            const name = document.getElementById('formName').value;
+            const password = document.getElementById('formPassword').value;
+            const formResponse = document.getElementById('formResponse');
+
+            formResponse.innerHTML = '<span class="status-pending">Submitting...</span>';
+
+            fetch(firewall_url + '/api/echo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name, password: password })
+            })
+            .then(r => r.json())
+            .then(data => {
+                formResponse.innerHTML = '<span class="status-allowed">' + JSON.stringify(data, null, 2) + '</span>';
+            })
+            .catch(err => {
+                formResponse.innerHTML = '<span class="status-blocked">Error: ' + err.message + '</span>';
+            });
+        }
+    </script>
+</body>
+</html>

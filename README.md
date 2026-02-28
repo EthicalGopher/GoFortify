@@ -72,6 +72,34 @@ GoFortify features an interactive TUI built with the Charm library. It provides:
 
 ---
 
+## 🚀 Running the Example
+
+The `example/` folder contains a complete demo with:
+- A GoFiber backend server (port 3001)
+- An interactive HTML dashboard to test attack payloads
+
+### Start the Backend
+
+```bash
+cd example
+go run main.go
+```
+
+### Start GoFortify Proxy
+
+```bash
+./gofortify init --port 5174 --backend-url http://localhost:3001
+```
+
+### Access the Demo
+
+Open `http://localhost:5174` in your browser. The dashboard allows you to:
+- Test SQL injection payloads via query parameters
+- Test XSS attacks via form submission
+- View real-time blocked requests
+
+---
+
 ## 🛡️ Security Engine
 
 GoFortify uses optimized regex-based inspection for:
