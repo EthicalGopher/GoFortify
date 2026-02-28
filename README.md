@@ -17,7 +17,7 @@
 
 ## 📹 Demo
 
-Check out the demo video in [`doc/demo.mp4`](doc/demo.mp4) to see GoFortify in action.
+![Demo](doc/demo.gif)
 
 ---
 
@@ -75,6 +75,10 @@ GoFortify features an interactive TUI built with the Charm library. It provides:
 - A live feed of all proxy traffic.
 - Visual alerts for blocked security threats.
 - Easy navigation between logs and the main dashboard.
+
+![Main Menu](doc/main_menu.png)
+
+![All Logs](doc/all_logs.png)
 
 ---
 
